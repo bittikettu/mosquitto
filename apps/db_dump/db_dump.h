@@ -24,7 +24,7 @@ void print__client(struct P_client *chunk, uint32_t length);
 void print__client_msg(struct P_client_msg *chunk, uint32_t length);
 void print__base_msg(struct P_base_msg *chunk, uint32_t length);
 void print__sub(struct P_sub *chunk, uint32_t length);
-void dumpjsonarray(void);
+void dumpjsonarray(dbid_t seed);
 void readindexcache(void);
 
 #endif

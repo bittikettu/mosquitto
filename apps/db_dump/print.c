@@ -26,8 +26,30 @@ Contributors:
 #include <persist.h>
 #include <property_mosq.h>
 #include <jansson.h>
+#include <zlib.h>
+#include <sys/stat.h>
 
 json_t *dataarray = 0;
+dbid_t indexi = -1;
+
+int gzstore(const char *istream, const char *fname) {
+	gzFile file;
+	int err;
+
+	file = gzopen(fname, "wb");
+	if (file == NULL) {
+		fprintf(stderr, "gzopen error\n");
+		return(1);
+	}
+
+	if (gzputs(file, istream) == -1) {
+		fprintf(stderr, "gzputs err: %s\n", gzerror(file, &err));
+		return(1);
+	}
+	gzseek(file, 1L, SEEK_CUR); /* add one zero byte */
+	gzclose(file);
+	return 0;
+}
 
 static void print__properties(mosquitto_property *properties)
 {
@@ -108,17 +130,29 @@ void print__client_msg(struct P_client_msg *chunk, uint32_t length)
 	}
 }
 
-void dumpjsonarray(void) {
+void dumpjsonarray(dbid_t seed) {
+	extern long base_msg_count;
+	char filename[50] = { 0 };
 	char *ret_strings = NULL;
 	int chars = 0;
 	ret_strings = json_dumps(dataarray, JSON_COMPACT | JSON_PRESERVE_ORDER | JSON_REAL_PRECISION(2));
-	chars = printf("%s\n",ret_strings);
-	memset(ret_strings,0x00,chars);
+//	chars = printf("%s\n",ret_strings);
+	chars = sprintf(filename, "./conversion2/%ld/", base_msg_count / 10000);
+
+	if (access(filename, F_OK) != 0) {
+		mkdir(filename, 0755);
+		printf("----- %s\n",filename);
+	}
+
+	memset(filename, 0x00, 50);
+	chars = sprintf(filename, "./conversion2/%ld/%lld", base_msg_count / 10000, seed);
+
+	gzstore(ret_strings, filename);
+	memset(ret_strings, 0x00, chars);
 	free(ret_strings);
 	json_array_clear(dataarray);
 }
 
-	dbid_t indexi = -1;
 void readindexcache(void) {
 	FILE *fp;
 
@@ -151,11 +185,10 @@ void print__base_msg(struct P_base_msg *chunk, uint32_t length)
 //	printf("\tExpiry Time: %" PRIu64 "\n", chunk->F.expiry_time);
 
 	payload = chunk->payload;
-	//if(chunk->F.payloadlen < 256){
 		/* Print payloads with UTF-8 data below an arbitrary limit of 256 bytes */
-	if(payload != 0 && chunk->F.payloadlen > 3) {
-		if(mosquitto_validate_utf8((char *)payload, (uint16_t)chunk->F.payloadlen) == MOSQ_ERR_SUCCESS){
-			if(dataarray == 0) {
+	if (payload != 0 && chunk->F.payloadlen > 3) {
+		if (mosquitto_validate_utf8((char*) payload, (uint16_t) chunk->F.payloadlen) == MOSQ_ERR_SUCCESS) {
+			if (dataarray == 0) {
 				dataarray = json_array();
 			}
 			if (chunk->F.store_id < indexi) {
@@ -168,24 +201,23 @@ void print__base_msg(struct P_base_msg *chunk, uint32_t length)
 					json_array_append(dataarray, arrayvalue);
 					counter++;
 				}
-				if ((counter % 100) == 0) {
+				if ((counter > 400) != 0) {
+					counter = 0;
 					fp = fopen("./number.bin.tmp", "wb");
 					if (fp != 0) {
 						fwrite(&chunk->F.store_id, 1, sizeof(dbid_t), fp);
 						fclose(fp);
 						sync();
-						rename("./number.bin.tmp","./number.bin");
+						rename("./number.bin.tmp", "./number.bin");
 					}
-					dumpjsonarray();
-					//printf("%lld\t%s\n", chunk->F.store_id, payload);
+					dumpjsonarray(chunk->F.store_id);
 				}
-			}
-			else {
-				printf("SKIP %ld %ld\n",indexi, chunk->F.store_id);
+			} else {
+				printf("SKIP %ld %ld\n", indexi, chunk->F.store_id);
 			}
 		}
 	}
-	//}
+
 	print__properties(chunk->properties);
 }
 

@@ -67,7 +67,7 @@ static int do_print = 1;
 static long cfg_count = 0;
 static long client_count = 0;
 static long client_msg_count = 0;
-static long base_msg_count = 0;
+long base_msg_count = 0;
 static long retain_count = 0;
 static long sub_count = 0;
 /* ====== */
@@ -514,10 +514,11 @@ int main(int argc, char *argv[])
 	report_client_stats();
 	cleanup_client_stats();
 	cleanup_msg_store();
-	dumpjsonarray();
+	dumpjsonarray(715517);
 
 	return rc;
 error:
+	dumpjsonarray(7155171);
 	cleanup_msg_store();
 	if(fd) fclose(fd);
 	return 1;
