@@ -445,6 +445,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Error: Unable to open %s\n", filename);
 		return 0;
 	}
+	readindexcache();
 	read_e(fd, &header, 15);
 	if(!memcmp(header, magic, 15)){
 		if(do_print) printf("Mosquitto DB dump\n");
@@ -461,29 +462,29 @@ int main(int argc, char *argv[])
 
 		while(persist__chunk_header_read(fd, &chunk, &length) == MOSQ_ERR_SUCCESS){
 			switch(chunk){
-				case DB_CHUNK_CFG:
-					if(dump__cfg_chunk_process(fd, length)) goto error;
-					break;
+//				case DB_CHUNK_CFG:
+//					if(dump__cfg_chunk_process(fd, length)) goto error;
+//					break;
 
 				case DB_CHUNK_BASE_MSG:
 					if(dump__base_msg_chunk_process(fd, length)) goto error;
 					break;
 
-				case DB_CHUNK_CLIENT_MSG:
-					if(dump__client_msg_chunk_process(fd, length)) goto error;
-					break;
-
-				case DB_CHUNK_RETAIN:
-					if(dump__retain_chunk_process(fd, length)) goto error;
-					break;
-
-				case DB_CHUNK_SUB:
-					if(dump__sub_chunk_process(fd, length)) goto error;
-					break;
-
-				case DB_CHUNK_CLIENT:
-					if(dump__client_chunk_process(fd, length)) goto error;
-					break;
+//				case DB_CHUNK_CLIENT_MSG:
+//					if(dump__client_msg_chunk_process(fd, length)) goto error;
+//					break;
+//
+//				case DB_CHUNK_RETAIN:
+//					if(dump__retain_chunk_process(fd, length)) goto error;
+//					break;
+//
+//				case DB_CHUNK_SUB:
+//					if(dump__sub_chunk_process(fd, length)) goto error;
+//					break;
+//
+//				case DB_CHUNK_CLIENT:
+//					if(dump__client_chunk_process(fd, length)) goto error;
+//					break;
 
 				default:
 					fprintf(stderr, "Warning: Unsupported chunk \"%d\" of length %d in persistent database file at position %ld. Ignoring.\n", chunk, length, ftell(fd));
@@ -513,6 +514,7 @@ int main(int argc, char *argv[])
 	report_client_stats();
 	cleanup_client_stats();
 	cleanup_msg_store();
+	dumpjsonarray();
 
 	return rc;
 error:

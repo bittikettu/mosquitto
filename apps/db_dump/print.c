@@ -25,7 +25,9 @@ Contributors:
 #include <mqtt_protocol.h>
 #include <persist.h>
 #include <property_mosq.h>
+#include <jansson.h>
 
+json_t *dataarray = 0;
 
 static void print__properties(mosquitto_property *properties)
 {
@@ -106,31 +108,84 @@ void print__client_msg(struct P_client_msg *chunk, uint32_t length)
 	}
 }
 
+void dumpjsonarray(void) {
+	char *ret_strings = NULL;
+	int chars = 0;
+	ret_strings = json_dumps(dataarray, JSON_COMPACT | JSON_PRESERVE_ORDER | JSON_REAL_PRECISION(2));
+	chars = printf("%s\n",ret_strings);
+	memset(ret_strings,0x00,chars);
+	free(ret_strings);
+	json_array_clear(dataarray);
+}
+
+	dbid_t indexi = -1;
+void readindexcache(void) {
+	FILE *fp;
+
+	fp = fopen("./number.bin", "rb");
+	if(fp != 0){
+		fread(&indexi,1, sizeof(dbid_t),fp);
+		fclose(fp);
+		printf("indeksi %ld\n",indexi);
+		sleep(4);
+	}
+}
 
 void print__base_msg(struct P_base_msg *chunk, uint32_t length)
 {
 	uint8_t *payload;
-
-	printf("DB_CHUNK_BASE_MSG:\n");
-	printf("\tLength: %d\n", length);
-	printf("\tStore ID: %" PRIu64 "\n", chunk->F.store_id);
+	json_t *root = NULL;
+	static int counter = 0;
+	FILE *fp;
+//	printf("DB_CHUNK_BASE_MSG:\n");
+//	printf("\tLength: %d\n", length);
+//	printf("\tStore ID: %" PRIu64 "\n", chunk->F.store_id);
 	/* printf("\tSource ID: %s\n", chunk->source_id); */
 	/* printf("\tSource Username: %s\n", chunk->source_username); */
-	printf("\tSource Port: %d\n", chunk->F.source_port);
-	printf("\tSource MID: %d\n", chunk->F.source_mid);
-	printf("\tTopic: %s\n", chunk->topic);
-	printf("\tQoS: %d\n", chunk->F.qos);
-	printf("\tRetain: %d\n", chunk->F.retain);
-	printf("\tPayload Length: %d\n", chunk->F.payloadlen);
-	printf("\tExpiry Time: %" PRIu64 "\n", chunk->F.expiry_time);
+//	printf("\tSource Port: %d\n", chunk->F.source_port);
+//	printf("\tSource MID: %d\n", chunk->F.source_mid);
+//	printf("\tTopic: %s\n", chunk->topic);
+//	printf("\tQoS: %d\n", chunk->F.qos);
+//	printf("\tRetain: %d\n", chunk->F.retain);
+//	printf("\tPayload Length: %d\n", chunk->F.payloadlen);
+//	printf("\tExpiry Time: %" PRIu64 "\n", chunk->F.expiry_time);
 
 	payload = chunk->payload;
-	if(chunk->F.payloadlen < 256){
+	//if(chunk->F.payloadlen < 256){
 		/* Print payloads with UTF-8 data below an arbitrary limit of 256 bytes */
+	if(payload != 0 && chunk->F.payloadlen > 3) {
 		if(mosquitto_validate_utf8((char *)payload, (uint16_t)chunk->F.payloadlen) == MOSQ_ERR_SUCCESS){
-			printf("\tPayload: %s\n", payload);
+			if(dataarray == 0) {
+				dataarray = json_array();
+			}
+			if (chunk->F.store_id < indexi) {
+				json_t *data = 0;
+				data = json_loads(payload, 0, 0);
+				json_t *arrayvalue = 0;
+				size_t indexi;
+				json_array_foreach(data, indexi, arrayvalue)
+				{
+					json_array_append(dataarray, arrayvalue);
+					counter++;
+				}
+				if ((counter % 100) == 0) {
+					fp = fopen("./number.bin.tmp", "wb");
+					if (fp != 0) {
+						fwrite(&chunk->F.store_id, 1, sizeof(dbid_t), fp);
+						fclose(fp);
+						sync();
+						rename("./number.bin.tmp","./number.bin");
+					}
+					dumpjsonarray();
+					//printf("%lld\t%s\n", chunk->F.store_id, payload);
+				}
+			}
+			else {
+				printf("SKIP %ld %ld\n",indexi, chunk->F.store_id);
+			}
 		}
 	}
+	//}
 	print__properties(chunk->properties);
 }
 

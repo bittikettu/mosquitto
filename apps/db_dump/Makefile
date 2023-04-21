@@ -1,7 +1,7 @@
 R=../..
 include ${R}/config.mk
 
-CFLAGS_FINAL=${CFLAGS} ${CPPFLAGS} ${BROKER_CFLAGS} ${BROKER_CPPFLAGS} -I${R}/include -I${R}/ -I${R}/lib -I${R}/src -I${R}/deps -I${R}/common
+CFLAGS_FINAL=${CFLAGS} ${CPPFLAGS} ${BROKER_CFLAGS} ${BROKER_CPPFLAGS}  -I${R}/include -I${R}/ -I${R}/lib -I${R}/src -I${R}/deps -I${R}/common
 
 OBJS = \
 	   db_dump.o \
@@ -28,7 +28,7 @@ all : mosquitto_db_dump
 endif
 
 mosquitto_db_dump : ${OBJS} ${BROKER_OBJS}
-	${CROSS_COMPILE}${CC} $^ -o $@ ${LDFLAGS} ${LIBS} ${APP_LDFLAGS}
+	${CROSS_COMPILE}${CC} $^ -o $@ ${LDFLAGS} ${LIBS} -ljansson ${APP_LDFLAGS}
 
 mosquitto_db_dump.a : ${OBJS} ${BROKER_OBJS}
 	${CROSS_COMPILE}$(AR) cr $@ $^
