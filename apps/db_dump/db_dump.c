@@ -72,6 +72,7 @@ static long retain_count = 0;
 static long sub_count = 0;
 /* ====== */
 
+char GLB_exportfolder[100] = { 0 };
 
 struct client_data *clients_by_id = NULL;
 struct base_msg_chunk *msgs_by_id = NULL;
@@ -425,18 +426,11 @@ int main(int argc, char *argv[])
 	uint32_t chunk;
 	char *filename;
 
-	if(argc == 2){
+	if(argc == 3){
 		filename = argv[1];
-	}else if(argc == 3 && !strcmp(argv[1], "--stats")){
-		stats = 1;
-		do_print = 0;
-		filename = argv[2];
-	}else if(argc == 3 && !strcmp(argv[1], "--client-stats")){
-		client_stats = 1;
-		do_print = 0;
-		filename = argv[2];
+		strncpy(GLB_exportfolder, argv[2], 100);
 	}else{
-		fprintf(stderr, "Usage: db_dump [--stats | --client-stats] <mosquitto db filename>\n");
+		fprintf(stderr, "Usage: db_dump <mosquitto db filename> <export folder>\n");
 		return 1;
 	}
 	memset(&db, 0, sizeof(struct mosquitto_db));

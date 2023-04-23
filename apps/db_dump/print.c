@@ -137,8 +137,12 @@ void dumpjsonarray(dbid_t seed) {
 	int chars = 0;
 	ret_strings = json_dumps(dataarray, JSON_COMPACT | JSON_PRESERVE_ORDER | JSON_REAL_PRECISION(2));
 //	chars = printf("%s\n",ret_strings);
-	chars = sprintf(filename, "./conversion2/%ld/", base_msg_count / 10000);
+	chars = sprintf(filename, "./%s/", GLB_exportfolder, base_msg_count / 10000);
+	if (access(filename, F_OK) != 0) {
+		mkdir(filename, 0755);
+	}
 
+	chars = sprintf(filename, "./%s/%ld/", GLB_exportfolder, base_msg_count / 10000);
 	if (access(filename, F_OK) != 0) {
 		mkdir(filename, 0755);
 		printf("----- %s\n",filename);

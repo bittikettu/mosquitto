@@ -27,4 +27,6 @@ void print__sub(struct P_sub *chunk, uint32_t length);
 void dumpjsonarray(dbid_t seed);
 void readindexcache(void);
 
+extern char GLB_exportfolder[100];
+
 #endif
