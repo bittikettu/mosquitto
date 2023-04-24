@@ -132,24 +132,25 @@ void print__client_msg(struct P_client_msg *chunk, uint32_t length)
 
 void dumpjsonarray(dbid_t seed) {
 	extern long base_msg_count;
-	char filename[50] = { 0 };
+	char filename[100] = { 0 };
 	char *ret_strings = NULL;
 	int chars = 0;
 	ret_strings = json_dumps(dataarray, JSON_COMPACT | JSON_PRESERVE_ORDER | JSON_REAL_PRECISION(2));
 //	chars = printf("%s\n",ret_strings);
-	chars = sprintf(filename, "./%s/", GLB_exportfolder, base_msg_count / 10000);
+	chars = sprintf(filename, "%s/", GLB_exportfolder);
 	if (access(filename, F_OK) != 0) {
 		mkdir(filename, 0755);
 	}
 
-	chars = sprintf(filename, "./%s/%ld/", GLB_exportfolder, base_msg_count / 10000);
+	memset(filename, 0x00, 100);
+	chars = sprintf(filename, "%s/%ld/", GLB_exportfolder, base_msg_count / 10000);
 	if (access(filename, F_OK) != 0) {
 		mkdir(filename, 0755);
-		printf("----- %s\n",filename);
 	}
 
-	memset(filename, 0x00, 50);
-	chars = sprintf(filename, "./conversion2/%ld/%lld", base_msg_count / 10000, seed);
+	memset(filename, 0x00, 100);
+	chars = sprintf(filename, "%s/%ld/%lld", GLB_exportfolder, base_msg_count / 10000, seed);
+	printf("----- %s\n",filename);
 
 	gzstore(ret_strings, filename);
 	memset(ret_strings, 0x00, chars);
